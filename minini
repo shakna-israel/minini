@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VER='0.0'
+VER='0.1'
 DEBUG=1
 
 hr() {
@@ -38,14 +38,18 @@ fi
 # Confirm file is accessible
 if [ ! -f "$1" ]; then
   # True if file cannot be found
+
   echo 'Cannot find file. Does it exist?' >&2
   echo "File: $1" >&2
   exit 1
+
 elif [ ! -r "$1" ]; then
   # True if the user doesn't have the 'read' bit on the file in question
+
   echo 'File is not readable. Do you have permission?' >&2
   echo "File: $1" >&2
   exit 1
+
 fi
 
 # Default section
@@ -58,32 +62,44 @@ buffer=' '
 # Read data line by line
 cat "$1" | while read -r line
 do
-  # Skip blank lines
   if [ ! -z "$line" ]; then
+  # Skip blank lines
+
   # Strip whitespace
   data=$(echo "$line" | sed -e 's/^[[:space:]]*//')
+
   # Get first non-whitespace character
   c=$(echo "$data" | cut -c1)
+
   if [ "$c" = '[' ]; then
     # Parse section title
+
     # grep grabs between brackets, sed strips leading and trailing whitespace
     section=$(echo "$data" | grep -Po '\[\K[^]]*' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+
     # make section shellsafe
-    section=$(echo "$section" | sed 's/[^a-zA-Z0-9]/_/g')
+    section=$(echo "ini_$section" | sed 's/[^a-zA-Z0-9]/_/g')
+
     if [ "$DEBUG" -eq 0 ]; then
       echo "Section: <$section>"
     fi
+
   elif echo "$data" | grep -q '='; then
     # Parse assignment
+
     # get varname and strip whitespace
     varname=$(echo "$data" | sed -e 's/=.*//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+
     # get value to be assigned and strip whitespace
     value=$(echo "$data" | sed -e 's/.*=//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+
     if [ "$DEBUG" -eq 0 ]; then
       echo "Variable: <$section::$varname> set to <$value>"
     fi
     buffer="${section}__$varname='$value'"
   fi
+
+  # Echo built shell var, stripping blank lines
   echo "$buffer" | sed '/^\s*$/d'
   fi
 done
